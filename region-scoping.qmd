@@ -1,0 +1,99 @@
+---
+title: "region-scoping"
+author: "jt-miller"
+format: html
+editor: visual
+---
+
+## Region Scoping
+
+An overview of ecoregions & Neon sites of interest concerning the Pollen Database project
+
+Libraries
+```{r}
+library(sf)
+library(data.table)
+library(tidyverse)
+```
+
+Bring in the Ecoregions & Neon Sites (Sites are depicted as centroids)
+```{r}
+us_ecoregions_3 <- sf::read_sf("/home/jt-miller/Pollen-Project/Pollen-DB/raw-data/Ecoregions/us-level3-ecoregions/us_eco_l3.shp") %>% 
+                      sf::st_transform(crs = 4326) # Transform into WGS84 from native projection (Albers equal Area)
+us_ecoregions_4 <- sf::read_sf("/home/jt-miller/Pollen-Project/Pollen-DB/raw-data/Ecoregions/us-level4-ecoregions/us_eco_l4_no_st.shp") %>% 
+                      sf::st_transform(crs = 4326) # Transform into WGS84 from native projection (Albers equal Area)
+na_ecoregions_3 <- sf::read_sf("/home/jt-miller/Pollen-Project/Pollen-DB/raw-data/Ecoregions/na-level3-ecoregions/NA_CEC_Eco_Level3.shp") %>% 
+                      sf::st_transform(crs = 4326) # Transform into WGS84 from native projection (Lambert Azimuthal Equal Area)
+neon_sites <- read.csv("/home/jt-miller/Pollen-Project/Pollen-DB/raw-data/NEON-sites/NEON_Field_Site_Metadata_20230309.csv")
+```
+
+
+Only Retain NEON sites of interest
+```{r}
+# We're focusing plants & insects, so we want sites that collect terrestrial data
+unique(neon_sites$field_site_type)
+terr_site_types <- c("Gradient Terrestrial", "Core Terrestrial")
+neon_sites_t <- neon_sites %>% 
+  filter(field_site_type %in% terr_site_types)
+```
+
+
+Read in as Spatial Data
+```{r}
+neon_sites_sp <- st_as_sf(neon_sites_t, coords = c("field_longitude", "field_latitude"), crs = 4326)
+
+
+```
+### Locate regions of interest 
+```{r}
+# Validate (due to native crs issues), subset neon sites outside of regions. 
+na_ecoregions_3_validated <- st_make_valid(na_ecoregions_3)
+st_crs(na_ecoregions_3_validated)
+neon_sites_in_regions <- neon_sites_sp[na_ecoregions_3_validated,]
+
+# isolate ecoregions that contain Neon Sites
+neon_sites_ecoregions <- na_ecoregions_3_validated[neon_sites_sp,]
+```
+
+#### Make some plots including the ecoregions & Neon Sites
+```{r}
+ggplot() + 
+  geom_sf(na_ecoregions_3_validated, mapping = aes()) +
+  geom_sf(neon_sites_sp, mapping = aes()) +
+  theme_bw() + 
+  ggtitle("Locations of NEON sites in relation to ecoregions")
+
+ggplot() + 
+  geom_sf(na_ecoregions_3_validated, mapping = aes()) +
+  geom_sf(neon_sites_ecoregions, mapping = aes(fill = "red")) +
+  geom_sf(neon_sites_sp, mapping = aes()) +
+  theme_bw() + 
+  ggtitle("Regions Containing NEON sites")
+
+blue_ridge <- subset(na_ecoregions_3_validated, NA_L3NAME == "Blue Ridge")
+
+blue_ridge_occur <- neon_sites_sp[blue_ridge,]
+
+ggplot() + 
+  #geom_sf(na_ecoregions_3_validated, mapping = aes()) +
+  geom_sf(blue_ridge, mapping = aes(fill = "red")) +
+  geom_sf(blue_ridge_occur, mapping = aes()) +
+  theme_bw() + 
+  ggtitle("Blue Ridge Sites")
+
+
+```
+### Extract Regions of Interest, Create Sampling Heatmaps 
+```{r}
+regions_of_interest <- neon_sites_ecoregions$NA_L3NAME
+
+region_i_df <- as.data.frame(regions_of_interest)
+```
+
+
+
+```{r}
+write.table(region_i_df, file = "/home/jt-miller/Pollen-Project/Pollen-DB/processed-data/shape-outputs/ecoregions/na-lvl3-ecoregions-w-neon-sites.txt", 
+           sep = "\t", row.names=FALSE, col.names=FALSE, quote=FALSE)
+```
+
