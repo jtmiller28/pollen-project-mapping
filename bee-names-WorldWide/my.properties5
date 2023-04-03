@@ -1,0 +1,4 @@
+nomer.append.schema.output.example.taxon.rank.order=[{"column":0,"type":"path.order.id"},{"column": 1,"type":"path.order.name"},{"column": 2,"type":"path.order"}, {"column": 3,"type":"taxonomicStatus"}]
+nomer.append.schema.output=[{"column":0,"type":"externalId"},{"column": 1,"type":"name"},{"column": 2,"type":"authorship"},{"column": 3,"type":"path.family.name"}, {"column":4,"type":"rank"}, {"column": 5,"type":"relationName"}]
+nomer.schema.input=[{"column":0,"type":"externalId"},{"column": 1,"type":"name"},{"column": 2,"type":"authorship"},{"column": 3, "type":"rank"},{"column": 4,"type":"family"}]
+
