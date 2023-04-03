@@ -1,0 +1,570 @@
+---
+title: "ecoregion-neon-visuals"
+author: "JT Miller"
+date: "2023-04-03"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### A walkthrough of some exploratory analysis on bee specimen data in the North American EPA ecoregions that contain NEON sites. Note that code is presented but not run (as it takes too long to knit in its current form)
+
+Libraries
+```{r include=FALSE}
+library(sf)
+library(data.table)
+library(tidyverse)
+library(sqldf)
+library(leaflet)
+library(colorspace)
+library(RColorBrewer)
+library(classInt)
+library(iNEXT)
+library(rgdal)
+```
+
+Bring in the Ecoregions & Neon Sites (Sites are depicted as centroids)
+```{r}
+
+na_ecoregions_3 <- sf::read_sf("/home/jt-miller/Pollen-Project/Pollen-DB/raw-data/Ecoregions/na-level3-ecoregions/NA_CEC_Eco_Level3.shp") %>% 
+                      sf::st_transform(crs = 4326) # Transform into WGS84 from native projection (Lambert Azimuthal Equal Area)
+neon_sites <- read.csv("/home/jt-miller/Pollen-Project/Pollen-DB/raw-data/NEON-sites/NEON_Field_Site_Metadata_20230309.csv")
+```
+
+
+Only Retain NEON sites of interest
+```{r}
+# We're focusing plants & insects, so we want sites that collect terrestrial data
+unique(neon_sites$field_site_type)
+terr_site_types <- c("Gradient Terrestrial", "Core Terrestrial")
+neon_sites_t <- neon_sites %>% 
+  filter(field_site_type %in% terr_site_types)
+```
+
+
+Read in as Spatial Data
+```{r}
+neon_sites_sp <- st_as_sf(neon_sites_t, coords = c("field_longitude", "field_latitude"), crs = 4326)
+
+
+```
+### Locate regions of interest 
+```{r}
+# Validate (due to native crs issues), subset neon sites outside of regions. 
+na_ecoregions_3_validated <- st_make_valid(na_ecoregions_3)
+st_crs(na_ecoregions_3_validated)
+neon_sites_in_regions <- neon_sites_sp[na_ecoregions_3_validated,]
+
+# isolate ecoregions that contain Neon Sites
+neon_sites_ecoregions <- na_ecoregions_3_validated[neon_sites_sp,]
+```
+
+### Some plots of Ecoregions with Neon Sites
+```{r}
+  ggplot() + 
+  geom_sf(na_ecoregions_3_validated, mapping = aes()) +
+  geom_sf(neon_sites_sp, mapping = aes()) +
+  theme_bw() + 
+  ggtitle("Locations of NEON sites in relation to ecoregions")
+
+ggplot() + 
+  geom_sf(na_ecoregions_3_validated, mapping = aes()) +
+  geom_sf(neon_sites_ecoregions, mapping = aes(fill = "red")) +
+  geom_sf(neon_sites_sp, mapping = aes()) +
+  theme_bw() + 
+  ggtitle("Regions Containing NEON sites")
+```
+
+### Gridding Ecoregions
+```{r eval=FALSE}
+# Change projection type to that of Equal Area: We're using all of NA, therefore lets follow USGS and use Albers Equal Area Projection
+na_ecoregions_3 <- sf::read_sf("/blue/soltis/millerjared/pollen-project/Pollen-DB/raw-data/Ecoregions/na-level3-ecoregions/NA_CEC_Eco_Level3.shp") # Native Proj
+
+neon_sites_sp <- st_as_sf(neon_sites_t, coords = c("field_longitude", "field_latitude"), crs = 4326)
+neon_sites_reproj <- st_transform(neon_sites_sp, crs = st_crs(na_ecoregions_3))
+
+st_crs(neon_sites_reproj) == st_crs(na_ecoregions_3) # Check
+
+neon_sites_ecoregions2 <- na_ecoregions_3[neon_sites_reproj,]
+neon_sites_in_regions <- neon_sites_reproj[na_ecoregions_3,]
+
+
+neon_sites_ecoregions2$NA_L3NAME == neon_sites_ecoregions$NA_L3NAME # Check
+
+neon_sites_ecoregions <- neon_sites_ecoregions2 # Overwrite for ease of reading, these are the same after checking reproj
+###############################################################################################################################################
+
+region_name_v <- unique(neon_sites_ecoregions$NA_L3NAME)
+
+
+# Create a list to store our dataframes in for each region, use a for-loop to iterate subsetting
+region_df_list <- list()
+
+for(i in 1:length(region_name_v)){
+  region_df_list[[i]] <- subset(neon_sites_ecoregions, NA_L3NAME == region_name_v[i])
+}
+
+# Loop out some plots to make it a bit easier to interpret... 
+
+
+# Build 10x10 km grids per ecoregion 
+region_grids <- list()
+for(i in 1:length(region_df_list)){
+  cellside = 10000 # 10,000 m = 10km 
+  region_grids_over <- sf::st_make_grid(region_df_list[[i]],
+                                        cellsize = cellside) 
+  #region_name <- as.character(region_df_list[[i]]$NA_L3NAME)
+  #region_grids_over$region_name <- print(region_name)
+  
+  region_grids[[i]] <- sf::st_intersection(region_grids_over, region_df_list[[i]])
+}
+
+
+# Format grids as sf objects with ID'ed gridcells 
+region_grids_i <- list()
+for(j in 1:length(region_grids)){
+  region_grids_i[[j]] <- region_grids[[j]] %>% 
+    st_as_sf() %>% 
+    mutate(grid_id = 1:n()) %>% 
+    mutate(ecoregion = region_name_v[[j]])
+}
+
+```
+![Example of 10x10 Km gridding with Neon Sites noted](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/NAecoregion-Neon-sites/neon_site_on_region_Southern Coastal Plain.png)
+### Subset occurrence data by region
+```{r eval=FALSE}
+
+# Subset occurrences to ecoregion level,  
+regions_w_bees <- list()
+for(i in 1:length(region_grids_i)){
+  regions_bees <- spatial_bees_rp[region_grids_i[[i]],]
+  regions_bees <- regions_bees %>% 
+    mutate(ecoregion = region_name_v[[i]] )
+  regions_w_bees[[i]] <- regions_bees 
+  
+}
+
+# Subset NEON sites by ecoregion as well
+regions_w_neon_sites <- list()
+for(i in 1:length(region_grids_i)){
+  regions_neon_sites <- neon_sites_in_regions[region_grids_i[[i]],]
+  regions_neon_sites <- regions_neon_sites %>% 
+    mutate(ecoregion = region_name_v[[i]] )
+  regions_w_neon_sites[[i]] <- regions_neon_sites 
+  
+}
+
+# Change region_name_v so that ecoregions CANT have '/' as it messes with file pathing...
+region_name_v2 <- gsub("\\/", " or ", region_name_v)
+# Change spaces " " with "-" in order avoid problematic file pathing later on
+region_name_v2 <- gsub(" ", "-", region_name_v2)
+
+setwd("/blue/soltis/millerjared/pollen-project/Pollen-DB/processed-data/ecoregion-subset/")
+for(i in 1:length(regions_w_bees)){
+  write.table(regions_w_bees[[i]], file=paste0("bee_occurrence_data_", region_name_v2[[i]],".txt"), row.names = FALSE, sep="\t", quote = FALSE)
+}
+```
+
+### Sampling Intensity: Measure the sampling intensity
+```{r eval=FALSE}
+
+# Buffer each occurrence to account for overlapping cells 
+regions_w_buffered_bees <- list()
+for(i in 1:length(regions_w_bees)){
+  D = cellside
+  d <- D/2 # Give "radius" of each grid cell
+  regions_w_buffered_bees[[i]] <- st_buffer(regions_w_bees[[i]],
+                                                 dist = d)
+}
+
+regions_w_buffered_neon_sites <- list()
+for(i in 1:length(regions_w_neon_sites)){
+  D = cellside
+  d <- D/2 # Give "radius" of each grid cell
+  regions_w_buffered_neon_sites [[i]] <- st_buffer(regions_w_neon_sites[[i]],
+                                                 dist = d)
+}
+
+# Join the buffered occurrences w/the grids
+grids_w_bees <- list()
+for(i in 1:length(regions_w_buffered_bees)){
+  grids_w_bees[[i]] <- region_grids_i[[i]] %>% 
+    st_join(regions_w_buffered_bees[[i]]) %>% 
+    group_by(grid_id) %>% 
+    mutate(point_count = case_when(is.na(resolvedNames) ~ 0, 
+                                   TRUE ~ 1)) %>%  # Affix cells that dont have anything present with 0s 
+    mutate(cell_count = sum(point_count))
+}
+
+# Join the buffered sites w/the grids
+grids_w_NEON <- list()
+for(i in 1:length(regions_w_buffered_neon_sites)){
+  grids_w_NEON[[i]] <- region_grids_i[[i]] %>% 
+    st_join(regions_w_buffered_neon_sites[[i]])
+}
+
+```
+
+## Example Plot: ![sampling-intensity](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/sampling-intesity-NAecoregion-NEON-overlaps/i_plot_Southern Coastal Plain.png)
+
+### Richness per Gridcell 
+```{r eval = FALSE}
+
+full_r <- list()
+for(i in 1:length(grids_w_bees)){
+  bee_grids <- grids_w_bees[[i]]
+grids_w_bees_DT <- setDT(bee_grids)
+grids_w_bees_DT2 <- grids_w_bees_DT[ , .(resolvedNames = replace(resolvedNames, resolvedNames == "", NA)), by = grid_id][, .(cell_richness = length(unique(na.omit(resolvedNames)))), by = grid_id]
+richness_by_site_b <- as.data.frame(grids_w_bees_DT2)
+grids_w_bees_rj <- grids_w_bees[[i]] %>% 
+  left_join(richness_by_site_b, by = "grid_id") %>% 
+  st_as_sf()
+
+full_r[[i]] <- grids_w_bees_rj
+
+}
+```
+
+## Example Plot: ![richness](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/richness-NAecoregion-NEON-overlaps/r_plot_Southern-Coastal-Plain.png)
+
+### Measure the quantity of specimens per institution (What collection do these specimens sit in?)
+```{r eval = FALSE}
+# Create a loop...
+institution_ls <- list()
+
+for(i in 1:length(regions_w_bees)){
+  institution_ls[[i]] <- regions_w_bees[[i]] %>% 
+    mutate(specimen_count = 1) %>% 
+    group_by(institutionCode) %>% 
+    summarize(institution_sum = sum(specimen_count))
+    }
+```
+
+## Example Plot ![institution](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/institution-sampling-NAecoregions-NEON-overlaps/institution_sampling_Southern-Coastal-Plain.png)
+
+### Time series of Sampling 
+```{r eval = FALSE}
+timeseries_density <- list()
+
+for(i in 1:length(regions_w_bees)){
+  yearly_bees <- regions_w_bees[[i]]
+  timeseries_density[[i]]<- yearly_bees %>% 
+  filter(!year == "") %>% 
+  filter(!year == "0") %>% 
+  filter(!year == "9999") %>%
+  mutate(year = as.numeric(year)) %>% 
+  mutate(specimen_count = 1)
+}
+time_list <- list() 
+setwd("/blue/soltis/millerjared/pollen-project/Pollen-DB/output-figures/timeseries-sampling-NAecoregions-NEON-overlaps/")
+for(i in 1:length(regions_w_buffered_neon_sites)){
+  time <- timeseries_density[[i]]
+time_vis <- ggplot(time, aes(x=year)) +
+    geom_density(fill="#8F00FF", color="#e9ecef", alpha = 0.9) + 
+    theme_bw() +
+    ggtitle(paste0("Specimen Sampling Time Series Density", "\n", region_name_v[[i]])) +
+    theme(plot.title = element_text(hjust = 0.5)) +
+    theme(axis.text.x = element_text(angle = 45, vjust = 0.5)) 
+time_list[[i]] <- time_vis
+  ggsave(time_vis, file=paste0("timeseries_density_2", region_name_v2[[i]],".png"), width = 14, height = 10, units = "cm")
+}
+
+```
+## Example Plot: ![timeseries](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/timeseries-sampling-NAecoregions-NEON-overlaps/timeseries_density_Southern-Coastal-Plain.png)
+
+### Tree Maps to visualize scope of Taxanomic Representation
+```{r eval = FALSE}
+library(treemap)
+
+ww_bee_names <- read.delim("/blue/soltis/millerjared/pollen-project/Pollen-DB/processed-data/WorldWideBees/DL-nomer-output.txt")
+
+# Keep only columns of interest:
+fams <- ww_bee_names  %>% 
+  select(acceptedStr.1, X.3) %>% 
+  rename(species = acceptedStr.1, family = X.3) %>% 
+  distinct(species, .keep_all = TRUE)
+
+fams_w_genus <- fams %>%
+  mutate(genus = word(species, 1))
+  
+fams_counts <- fams_w_genus %>% 
+group_by(family) %>% 
+  count() %>% 
+  filter(!family == "") 
+
+genus_counts <- fams_w_genus %>% 
+  group_by(genus, family) %>% 
+  summarize(count = n())
+# Plot
+# Plot
+png(filename="/blue/soltis/millerjared/pollen-project/Pollen-DB/output-figures/taxaTreeMaps-NAecoregions-NEON-overlaps/worldWideTreeMap.png",width=800, height=800)
+
+treemap(genus_counts,
+        
+        # data
+        index=c("family", "genus"),
+        fontcolor.labels = c("black", "white"),
+        vSize="count",
+        type="index",
+        
+        # Main
+        title="Global Family Representation",
+        palette="Dark2",
+  )
+dev.off()
+
+test <- regions_w_bees[[1]]
+
+test_d <- distinct(test, resolvedNames) 
+
+ww_bee_names <- read.delim("/blue/soltis/millerjared/pollen-project/Pollen-DB/processed-data/WorldWideBees/DL-nomer-output.txt")
+
+# Keep only columns of interest:
+fams <- ww_bee_names  %>% 
+  select(acceptedStr.1, X.3) %>% 
+  rename(resolvedNames = acceptedStr.1, family = X.3) %>% 
+  distinct(resolvedNames, .keep_all = TRUE)
+
+# Merge for family info
+test_j <- merge(test_d, fams, by = "resolvedNames")
+
+test_g <- test_j %>% 
+  mutate(genus = word(resolvedNames, 1))
+
+test_c <- test_g %>% 
+  group_by(genus, family) %>% 
+  summarize(count = n())
+
+# For Loop  
+tree_list <- list() 
+
+for(i in 1:length(regions_w_bees)){
+  region_bee_names <- regions_w_bees[[i]]
+  region_bee_names_d <- distinct(region_bee_names, resolvedNames)
+  region_bee_name_m <- merge(region_bee_names_d, fams, by = "resolvedNames")
+  tree_list[[i]] <- region_bee_name_m %>% 
+    mutate(genus = word(resolvedNames, 1)) %>% 
+    group_by(genus, family) %>% 
+    summarize(count = n())
+  }
+```
+
+## Example: ![treemap](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/taxaTreeMaps-NAecoregions-NEON-overlaps/worldWideTreeMap.png)
+
+
+# Breaking Down The 27 Regions:
+
+## 1. Alaska Range
+![A-neon](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/NAecoregion-Neon-sites/neon_site_on_region_Alaska Range.png)
+![A-intesity](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/sampling-intesity-NAecoregion-NEON-overlaps/i_plot_Alaska Range.png)
+![A-richness](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/richness-NAecoregion-NEON-overlaps/r_plot_Alaska-Range.png)
+![A-institutions](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/institution-sampling-NAecoregions-NEON-overlaps/institution_sampling_Alaska-Range.png)
+![A-timeseries](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/timeseries-sampling-NAecoregions-NEON-overlaps/timeseries_density_Alaska-Range.png)
+![A-treemap](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/taxaTreeMaps-NAecoregions-NEON-overlaps/taxonomic_treeMap_Alaska-Range.png)
+## 2. Artic Coastal Plain 
+![Ar-neon](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/NAecoregion-Neon-sites/neon_site_on_region_Arctic Coastal Plain.png)
+
+![Ar-intesity](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/sampling-intesity-NAecoregion-NEON-overlaps/i_plot_Arctic Coastal Plain.png)
+![Ar-richness](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/richness-NAecoregion-NEON-overlaps/r_plot_Arctic-Coastal-Plain.png)
+![Ar-institutions](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/institution-sampling-NAecoregions-NEON-overlaps/institution_sampling_Arctic-Coastal-Plain.png)
+![Ar-timeseries](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/timeseries-sampling-NAecoregions-NEON-overlaps/timeseries_density_Arctic-Coastal-Plain.png)
+![Ar-treemap](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/taxaTreeMaps-NAecoregions-NEON-overlaps/taxonomic_treeMap_Arctic-Coastal-Plain.png)
+## 3. Blue Ridge 
+![BR-neon](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/NAecoregion-Neon-sites/neon_site_on_region_Blue Ridge.png)
+![BR-intesity](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/sampling-intesity-NAecoregion-NEON-overlaps/i_plot_Blue Ridge.png)
+![BR-richness](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/richness-NAecoregion-NEON-overlaps/r_plot_Blue-Ridge.png)
+![BR-institutions](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/institution-sampling-NAecoregions-NEON-overlaps/institution_sampling_Blue-Ridge.png)
+![BR-timeseries](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/timeseries-sampling-NAecoregions-NEON-overlaps/timeseries_density_Blue-Ridge.png)
+![BR-treemap](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/taxaTreeMaps-NAecoregions-NEON-overlaps/taxonomic_treeMap_Blue-Ridge.png)
+
+## 4. California Coastal Chaparral and Oak Woodlands
+![CCC-neon](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/NAecoregion-Neon-sites/neon_site_on_region_California Coastal Sage, Chaparral, and Oak Woodlands.png)
+![CCC-intesity](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/sampling-intesity-NAecoregion-NEON-overlaps/i_plot_California Coastal Sage, Chaparral, and Oak Woodlands.png)
+![CCC-richness](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/richness-NAecoregion-NEON-overlaps/r_plot_California-Coastal-Sage,-Chaparral,-and-Oak-Woodlands.png)
+![CCC-institutions](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/institution-sampling-NAecoregions-NEON-overlaps/institution_sampling_California-Coastal-Sage,-Chaparral,-and-Oak-Woodlands.png)
+
+![CCC-timeseries](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/timeseries-sampling-NAecoregions-NEON-overlaps/timeseries_density_California-Coastal-Sage,-Chaparral,-and-Oak-Woodlands.png)
+![CCC-treemap](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/taxaTreeMaps-NAecoregions-NEON-overlaps/taxonomic_treeMap_California-Coastal-Sage,-Chaparral,-and-Oak-Woodlands.png)
+## 5. Cascades
+![CAS-neon](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/NAecoregion-Neon-sites/neon_site_on_region_Cascades.png)
+![CAS-intesity](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/sampling-intesity-NAecoregion-NEON-overlaps/i_plot_Cascades.png)
+![CAS-richness](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/richness-NAecoregion-NEON-overlaps/r_plot_Cascades.png)
+![CAS-institutions](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/institution-sampling-NAecoregions-NEON-overlaps/institution_sampling_Cascades.png)
+![CAS-timeseries](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/timeseries-sampling-NAecoregions-NEON-overlaps/timeseries_density_Cascades.png)
+![CAS-treemap](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/taxaTreeMaps-NAecoregions-NEON-overlaps/taxonomic_treeMap_Cascades.png)
+## 6. Central Basin
+![CB-neon](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/NAecoregion-Neon-sites/neon_site_on_region_Central Basin and Range.png)
+![CB-intesity](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/sampling-intesity-NAecoregion-NEON-overlaps/i_plot_Central Basin and Range.png)
+![CB-richness](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/richness-NAecoregion-NEON-overlaps/r_plot_Central-Basin-and-Range.png)
+![CB-institutions](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/institution-sampling-NAecoregions-NEON-overlaps/institution_sampling_Central-Basin-and-Range.png)
+![CB-timeseries](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/timeseries-sampling-NAecoregions-NEON-overlaps/timeseries_density_Central-Great-Plains.png)
+![CB-treemap](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/taxaTreeMaps-NAecoregions-NEON-overlaps/taxonomic_treeMap_Central-Basin-and-Range.png)
+## 7. Central Great Plains
+![CGP-neon](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/NAecoregion-Neon-sites/neon_site_on_region_Central Great Plains.png)
+![CGP-intesity](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/sampling-intesity-NAecoregion-NEON-overlaps/i_plot_Central Great Plains.png)
+![CGP-richness](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/richness-NAecoregion-NEON-overlaps/r_plot_Central-Great-Plains.png)
+![CGP-institutions](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/institution-sampling-NAecoregions-NEON-overlaps/institution_sampling_Central-Great-Plains.png)
+![CGP-timeseries](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/timeseries-sampling-NAecoregions-NEON-overlaps/timeseries_density_Central-Great-Plains.png)
+![CGP-treemap](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/taxaTreeMaps-NAecoregions-NEON-overlaps/taxonomic_treeMap_Central-Great-Plains.png)
+## 8. Central Irregular Plains
+![CIP-neon](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/NAecoregion-Neon-sites/neon_site_on_region_Central Irregular Plains.png)
+![CIP-intesity](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/sampling-intesity-NAecoregion-NEON-overlaps/i_plot_Central Irregular Plains.png)
+![CIP-richness](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/richness-NAecoregion-NEON-overlaps/r_plot_Central-Irregular-Plains.png)
+![CIP-institutions](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/institution-sampling-NAecoregions-NEON-overlaps/institution_sampling_Central-Irregular-Plains.png)
+![CIP-timeseries](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/timeseries-sampling-NAecoregions-NEON-overlaps/timeseries_density_Central-Irregular-Plains.png)
+![CIP-treemap](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/taxaTreeMaps-NAecoregions-NEON-overlaps/taxonomic_treeMap_Central-Irregular-Plains.png)
+
+## 9. Chihauhuan Desert
+![CD-neon](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/NAecoregion-Neon-sites/neon_site_on_region_Chihuahuan Desert.png)
+![CD-intesity](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/sampling-intesity-NAecoregion-NEON-overlaps/i_plot_Chihuahuan Desert.png)
+![CD-richness](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/richness-NAecoregion-NEON-overlaps/r_plot_Chihuahuan-Desert.png)
+![CD-institutions](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/institution-sampling-NAecoregions-NEON-overlaps/institution_sampling_Chihuahuan-Desert.png)
+![CD-timeseries](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/timeseries-sampling-NAecoregions-NEON-overlaps/timeseries_density_Chihuahuan-Desert.png)
+![CD-treemap](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/taxaTreeMaps-NAecoregions-NEON-overlaps/taxonomic_treeMap_Chihuahuan-Desert.png)
+
+## 10. Colorado Plateaus
+![CP-neon](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/NAecoregion-Neon-sites/neon_site_on_region_Colorado Plateaus.png)
+![CP-intesity](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/sampling-intesity-NAecoregion-NEON-overlaps/i_plot_Colorado Plateaus.png)
+![CP-richness](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/richness-NAecoregion-NEON-overlaps/r_plot_Colorado-Plateaus.png)
+![CP-institutions](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/institution-sampling-NAecoregions-NEON-overlaps/institution_sampling_Colorado-Plateaus.png)
+![CP-timeseries](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/timeseries-sampling-NAecoregions-NEON-overlaps/timeseries_density_Colorado-Plateaus.png)
+![CP-treemap](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/taxaTreeMaps-NAecoregions-NEON-overlaps/taxonomic_treeMap_Colorado-Plateaus.png)
+
+## 11. Cross Timbers
+![CT-neon](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/NAecoregion-Neon-sites/neon_site_on_region_Cross Timbers.png)
+![CT-intesity](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/sampling-intesity-NAecoregion-NEON-overlaps/i_plot_Cross Timbers.png)
+![CT-richness](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/richness-NAecoregion-NEON-overlaps/r_plot_Cross-Timbers.png)
+![CT-institutions](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/institution-sampling-NAecoregions-NEON-overlaps/institution_sampling_Cross-Timbers.png)
+![CT-timeseries](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/timeseries-sampling-NAecoregions-NEON-overlaps/timeseries_density_Cross-Timbers.png)
+![CT-treemap](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/taxaTreeMaps-NAecoregions-NEON-overlaps/taxonomic_treeMap_Cross-Timbers.png)
+
+## 12. Flint Hills
+![CT-neon](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/NAecoregion-Neon-sites/neon_site_on_region_Flint Hills.png)
+![CT-intesity](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/sampling-intesity-NAecoregion-NEON-overlaps/i_plot_Flint Hills.png)
+![CT-richness](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/richness-NAecoregion-NEON-overlaps/r_plot_Flint-Hills.png)
+![CT-institutions](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/institution-sampling-NAecoregions-NEON-overlaps/institution_sampling_Flint-Hills.png)
+![CT-timeseries](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/timeseries-sampling-NAecoregions-NEON-overlaps/timeseries_density_Flint-Hills.png)
+![CT-treemap](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/taxaTreeMaps-NAecoregions-NEON-overlaps/taxonomic_treeMap_Flint-Hills.png)
+
+## 13. High Plains
+![HP-neon](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/NAecoregion-Neon-sites/neon_site_on_region_High Plains.png)
+![HP-intesity](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/sampling-intesity-NAecoregion-NEON-overlaps/i_plot_High Plains.png)
+![HP-richness](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/richness-NAecoregion-NEON-overlaps/r_plot_High-Plains.png)
+![HP-institutions](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/institution-sampling-NAecoregions-NEON-overlaps/institution_sampling_High-Plains.png)
+![HP-timeseries](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/timeseries-sampling-NAecoregions-NEON-overlaps/timeseries_density_High-Plains.png)
+![HP-treemap](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/taxaTreeMaps-NAecoregions-NEON-overlaps/taxonomic_treeMap_High-Plains.png)
+
+## 14. Interior Forested Lowlands and Uplands
+![IFLU-neon](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/NAecoregion-Neon-sites/neon_site_on_region_Interior Forested Lowlands and Uplands.png)
+![IFLU-intesity](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/sampling-intesity-NAecoregion-NEON-overlaps/i_plot_Interior Forested Lowlands and Uplands.png)
+![IFLU-richness](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/richness-NAecoregion-NEON-overlaps/r_plot_Interior-Forested-Lowlands-and-Uplands.png)
+![IFLU-institutions](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/institution-sampling-NAecoregions-NEON-overlaps/institution_sampling_Interior-Forested-Lowlands-and-Uplands.png)
+![IFLU-timeseries](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/timeseries-sampling-NAecoregions-NEON-overlaps/timeseries_density_Interior-Forested-Lowlands-and-Uplands.png)
+![IFLU-treemap](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/taxaTreeMaps-NAecoregions-NEON-overlaps/taxonomic_treeMap_Interior-Forested-Lowlands-and-Uplands.png)
+
+## 15. Interior Highlands and Klondike Plateau
+![IHKP-neon](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/NAecoregion-Neon-sites/neon_site_on_region_Interior Highlands and Klondike Plateau.png)
+![IHKP-intesity](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/sampling-intesity-NAecoregion-NEON-overlaps/i_plot_Interior Highlands and Klondike Plateau.png)
+![IHKP-richness](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/richness-NAecoregion-NEON-overlaps/r_plot_Interior-Highlands-and-Klondike-Plateau.png)
+![IHKP-institutions](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/institution-sampling-NAecoregions-NEON-overlaps/institution_sampling_Interior-Highlands-and-Klondike-Plateau.png)
+![IHKP-timeseries](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/timeseries-sampling-NAecoregions-NEON-overlaps/timeseries_density_Interior-Highlands-and-Klondike-Plateau.png)
+![IHKP-treemap](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/taxaTreeMaps-NAecoregions-NEON-overlaps/taxonomic_treeMap_Interior-Highlands-and-Klondike-Plateau.png)
+## 16. Middle Rockies
+![MR-neon](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/NAecoregion-Neon-sites/neon_site_on_region_Middle Rockies.png)
+![MR-intesity](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/sampling-intesity-NAecoregion-NEON-overlaps/i_plot_Middle Rockies.png)
+![MR-richness](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/richness-NAecoregion-NEON-overlaps/r_plot_Middle-Rockies.png)
+![MR-institutions](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/institution-sampling-NAecoregions-NEON-overlaps/institution_sampling_Middle-Rockies.png)
+![MR-timeseries](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/timeseries-sampling-NAecoregions-NEON-overlaps/timeseries_density_Middle-Rockies.png)
+![MR-treemap](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/taxaTreeMaps-NAecoregions-NEON-overlaps/taxonomic_treeMap_Middle-Rockies.png)
+## 17. Northern Appalachian and Alantic Maritime Highlands
+![NAAMH-neon](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/NAecoregion-Neon-sites/neon_site_on_region_Northern Appalachian and Atlantic Maritime Highlands.png)
+![NAAMH-intesity](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/sampling-intesity-NAecoregion-NEON-overlaps/i_plot_Northern Appalachian and Atlantic Maritime Highlands.png)
+![NAAMH-richness](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/richness-NAecoregion-NEON-overlaps/r_plot_Northern-Appalachian-and-Atlantic-Maritime-Highlands.png)
+![NAAMH-institutions](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/institution-sampling-NAecoregions-NEON-overlaps/institution_sampling_Northern-Appalachian-and-Atlantic-Maritime-Highlands.png)
+![NAAMH-timeseries](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/timeseries-sampling-NAecoregions-NEON-overlaps/timeseries_density_Northern-Appalachian-and-Atlantic-Maritime-Highlands.png)
+![NAAMH-treemap](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/taxaTreeMaps-NAecoregions-NEON-overlaps/taxonomic_treeMap_Northern-Appalachian-and-Atlantic-Maritime-Highlands.png)
+
+## 18. Northerwestern Glaciated Plains
+![NGP-neon](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/NAecoregion-Neon-sites/neon_site_on_region_Northwestern Glaciated Plains.png)
+![NGP-intesity](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/sampling-intesity-NAecoregion-NEON-overlaps/i_plot_Northwestern Glaciated Plains.png)
+![NGP-richness](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/richness-NAecoregion-NEON-overlaps/r_plot_Northwestern-Glaciated-Plains.png)
+![NGP-institutions](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/institution-sampling-NAecoregions-NEON-overlaps/institution_sampling_Northwestern-Glaciated-Plains.png)
+![NGP-timeseries](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/timeseries-sampling-NAecoregions-NEON-overlaps/timeseries_density_Northwestern-Glaciated-Plains.png)
+![NGP-treemap](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/taxaTreeMaps-NAecoregions-NEON-overlaps/taxonomic_treeMap_Northwestern-Glaciated-Plains.png)
+
+## 19. Northern Lakes and Forests
+![NLF-neon](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/NAecoregion-Neon-sites/neon_site_on_region_Northern Lakes and Forests.png)
+![NLF-intesity](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/sampling-intesity-NAecoregion-NEON-overlaps/i_plot_Northern Lakes and Forests.png)
+![NLF-richness](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/richness-NAecoregion-NEON-overlaps/r_plot_Northern-Lakes-and-Forests.png)
+![NLF-institutions](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/institution-sampling-NAecoregions-NEON-overlaps/institution_sampling_Northern-Lakes-and-Forests.png)
+![NLF-timeseries](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/timeseries-sampling-NAecoregions-NEON-overlaps/timeseries_density_Northern-Lakes-and-Forests.png)
+![NLF-treemap](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/taxaTreeMaps-NAecoregions-NEON-overlaps/taxonomic_treeMap_Northern-Lakes-and-Forests.png)
+
+## 20. North Western Great Plains
+![NWGP-neon](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/NAecoregion-Neon-sites/neon_site_on_region_Northwestern Great Plains.png)
+![NWGP-intesity](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/sampling-intesity-NAecoregion-NEON-overlaps/i_plot_Northwestern Great Plains.png)
+![NWGP-richness](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/richness-NAecoregion-NEON-overlaps/r_plot_Northwestern-Great-Plains.png)
+![NWGP-institutions](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/institution-sampling-NAecoregions-NEON-overlaps/institution_sampling_Northwestern-Great-Plains.png)
+![NWGP-timeseries](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/timeseries-sampling-NAecoregions-NEON-overlaps/timeseries_density_Northwestern-Great-Plains.png)
+![NWGP-treemap](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/taxaTreeMaps-NAecoregions-NEON-overlaps/taxonomic_treeMap_Northwestern-Great-Plains.png)
+
+
+## 21. Ridge and Valley
+![RV-neon](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/NAecoregion-Neon-sites/neon_site_on_region_Ridge and Valley.png)
+![RV-intesity](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/sampling-intesity-NAecoregion-NEON-overlaps/i_plot_Ridge and Valley.png)
+![RV-richness](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/richness-NAecoregion-NEON-overlaps/r_plot_Ridge-and-Valley.png)
+![RV-institutions](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/institution-sampling-NAecoregions-NEON-overlaps/institution_sampling_Ridge-and-Valley.png)
+![RV-timeseries](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/timeseries-sampling-NAecoregions-NEON-overlaps/timeseries_density_Ridge-and-Valley.png)
+![RV-treemap](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/taxaTreeMaps-NAecoregions-NEON-overlaps/taxonomic_treeMap_Ridge-and-Valley.png)
+
+## 22. Sierra Nevadas
+![SN-neon](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/NAecoregion-Neon-sites/neon_site_on_region_Sierra Nevada.png)
+![SN-intesity](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/sampling-intesity-NAecoregion-NEON-overlaps/i_plot_Sierra Nevada.png)
+![SN-richness](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/richness-NAecoregion-NEON-overlaps/r_plot_Sierra-Nevada.png)
+![SN-institutions](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/institution-sampling-NAecoregions-NEON-overlaps/institution_sampling_Sierra-Nevada.png)
+![SN-timeseries](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/timeseries-sampling-NAecoregions-NEON-overlaps/timeseries_density_Sierra-Nevada.png)
+![SN-treemap](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/taxaTreeMaps-NAecoregions-NEON-overlaps/taxonomic_treeMap_Sierra-Nevada.png)
+
+## 23. Sonoran Desert 
+![SD-neon](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/NAecoregion-Neon-sites/neon_site_on_region_Sonoran Desert.png)
+![SD-intesity](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/sampling-intesity-NAecoregion-NEON-overlaps/i_plot_Sonoran Desert.png)
+![SD-richness](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/richness-NAecoregion-NEON-overlaps/r_plot_Sonoran-Desert.png)
+![SD-institutions](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/institution-sampling-NAecoregions-NEON-overlaps/institution_sampling_Sonoran-Desert.png)
+![SD-timeseries](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/timeseries-sampling-NAecoregions-NEON-overlaps/timeseries_density_Sonoran-Desert.png)
+![SD-treemap](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/taxaTreeMaps-NAecoregions-NEON-overlaps/taxonomic_treeMap_Sonoran-Desert.png)
+
+## 24. SouthEastern Plains
+![SEP-neon](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/NAecoregion-Neon-sites/neon_site_on_region_Southeastern Plains.png)
+![SEP-intesity](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/sampling-intesity-NAecoregion-NEON-overlaps/i_plot_Southeastern Plains.png)
+![SEP-richness](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/richness-NAecoregion-NEON-overlaps/r_plot_Southeastern-Plains.png)
+![SEP-institutions](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/institution-sampling-NAecoregions-NEON-overlaps/institution_sampling_Southeastern-Plains.png)
+![SEP-timeseries](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/timeseries-sampling-NAecoregions-NEON-overlaps/timeseries_density_Southeastern-Plains.png)
+![SEP-treemap](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/taxaTreeMaps-NAecoregions-NEON-overlaps/taxonomic_treeMap_Southeastern-Plains.png)
+
+## 25. Southern Coastal Plains
+![SoCP-neon](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/NAecoregion-Neon-sites/neon_site_on_region_Southern Coastal Plain.png)
+![SoCP-intesity](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/sampling-intesity-NAecoregion-NEON-overlaps/i_plot_Southern Coastal Plain.png)
+![SoCP-richness](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/richness-NAecoregion-NEON-overlaps/r_plot_Southern-Coastal-Plain.png)
+![SoCP-institutions](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/institution-sampling-NAecoregions-NEON-overlaps/institution_sampling_Southern-Coastal-Plain.png)
+![SoCP-timeseries](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/timeseries-sampling-NAecoregions-NEON-overlaps/timeseries_density_Southern-Coastal-Plain.png)
+![SoCP-treemap](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/taxaTreeMaps-NAecoregions-NEON-overlaps/taxonomic_treeMap_Southern-Coastal-Plain.png)
+
+## 26. Southern Rockies
+![SoR-neon](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/NAecoregion-Neon-sites/neon_site_on_region_Southern Rockies.png)
+![SoR-intesity](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/sampling-intesity-NAecoregion-NEON-overlaps/i_plot_Southern Rockies.png)
+![SoR-richness](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/richness-NAecoregion-NEON-overlaps/r_plot_Southern-Rockies.png)
+![SoR-institutions](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/institution-sampling-NAecoregions-NEON-overlaps/institution_sampling_Southern-Rockies.png)
+![SoR-timeseries](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/timeseries-sampling-NAecoregions-NEON-overlaps/timeseries_density_Southern-Rockies.png)
+![SoR-treemap](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/taxaTreeMaps-NAecoregions-NEON-overlaps/taxonomic_treeMap_Southern-Rockies.png)
+
+## 27.  Richardson Mountains
+![RM-neon](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/NAecoregion-Neon-sites/Richardson Mountains.png)
+![RM-intesity](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/sampling-intesity-NAecoregion-NEON-overlaps/i_plot_Brooks Range/Richardson Mountains.png)
+![RM-richness](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/richness-NAecoregion-NEON-overlaps/r_plot_Brooks-Range-or-Richardson-Mountains.png)
+![RM-institutions](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/institution-sampling-NAecoregions-NEON-overlaps/institution_sampling_Brooks-Range-or-Richardson-Mountains.png)
+![RM-timeseries](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/timeseries-sampling-NAecoregions-NEON-overlaps/timeseries_density_Brooks-Range-or-Richardson-Mountains.png)
+![RV-treemap](/home/jt-miller/Pollen-Project/Pollen-DB/output-figures/taxaTreeMaps-NAecoregions-NEON-overlaps/taxonomic_treeMap_Brooks-Range-or-Richardson-Mountains.png)
