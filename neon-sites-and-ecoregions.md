@@ -1,5 +1,6 @@
 ---
-Neon Sites & Ecoregions
+layout: post
+title: Ecoregion & Neon Site Sampling Scope
 ---
 
 Here I am outlining the visualizations to illustrate potential site selection for the pollen project. I'll start with a brief introduction into the sites of interest: 
