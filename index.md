@@ -2,4 +2,6 @@
 
 > Testing changes to this markdown. 
 
-https://jtmiller28.github.io/pollen-project-mapping/neon-sites-and-ecoregions.md
+Take a look at the [Exploratory Analysis](/neon-sites-and-ecoregions.md) for more information.
+
+
