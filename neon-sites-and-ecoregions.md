@@ -1,5 +1,4 @@
 ---
-layout: post
 title: Ecoregion & Neon Site Sampling Scope
 ---
 
