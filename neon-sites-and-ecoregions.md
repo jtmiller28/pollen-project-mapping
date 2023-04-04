@@ -4,4 +4,4 @@ Here, is the current visualizations made to illustrate potential site selection 
 
 
 <img align="right" width="33%" src="../fig/ecoregion-overall-map-w-neon.png"/>
-<img src="pollen-project-mapping/fig/ecoregion-overall-map-w-neon.png " width = "50%" align="middle"  />
+<img src="jtmiller29/pollen-project-mapping/fig/ecoregion-overall-map-w-neon.png " width = "50%" align="middle"  />
