@@ -4,5 +4,5 @@ decription: Pollen Project mapping ecoregions, many updates incoming
 
 
 
-url: 'https://your-github-username.github.io/' # your main domain
-baseurl: 'your-repo-name/' # if you're using custom domain keep this blank example: baseurl: ''
+url: 'https://jtmiller28.github.io/' # your main domain
+baseurl: 'pollen_project-mapping/' # if you're using custom domain keep this blank example: baseurl: ''
