@@ -32,5 +32,5 @@ To measure the taxonomic scope of specimens available:
 - Weighted the taxonomic groups, by counting the number of species per family & genus 
 - Created tree diagrams: These illustrate the quantity of the taxonomic subdivisions per ecoregion. 
 
-Example of tree diagram: Here, we're looking at the global representation of taxonomy weighting in bees. First, the diagram is subdivided into the bee families Apidae, Halicitidae, Andrenidae, Colletidae, Mellitidae, Stenotritidae according to the "weight" of how many species are described in each family. This follows the same principle for the genus level. 
+Example of tree diagram: Here, we're looking at the global representation of taxonomy weighting in bees. First, the diagram is subdivided into the bee families Apidae, Halicitidae, Megachilidae, Andrenidae, Colletidae, Mellitidae, and Stenotritidae according to the "weight" of how many species are described in each family. This follows the same principle for the genus level. 
 <img src="../fig/worldWideTreeMap.png" width = "100%" align="middle"/>
