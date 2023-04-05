@@ -13,4 +13,4 @@ Land Use: Ranching, oil & gas & coal mining/extraction, recreation, and tourism.
 <img src="../fig/r_plot_Colorado-Plateaus.png" width = "75%" align="middle"/>
 <img src="../fig/institution_sampling_Colorado-Plateaus.png" width = "75%" align="middle"/>
 <img src="../fig/timeseries_density_Colorado-Plateaus.png" width = "75%" align="middle"/>
-<img src="..taxonomic_treeMap_Colorado-Plateaus.png" width = "75%" align="middle"/>
+<img src="../fig/taxonomic_treeMap_Colorado-Plateaus.png" width = "75%" align="middle"/>
