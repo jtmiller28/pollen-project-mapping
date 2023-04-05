@@ -20,7 +20,7 @@ In a bit more detail, here are the ecoregions labeled with IDs. Written below is
 5. [California Coastal Sage, Chaparral, and Oak Woodlands](./regions-mds/california-coastal-sage-chaparral-and-oak-woodlands.md) <br>  
 6. [Arctic Coastal Plain](./regions-mds/arctic-coastal-plain.md) <br>  
 7. [Brooks Range/Richardson Mountains](./regions-mds/brooks-range-richardsons-mountains.md) <br>  
-8. Interior Forested Lowlands and Uplands <br>
+8. [Interior Forested Lowlands and Uplands](./regions-mds/interior-forested-lowlands-and-uplands.md) <br>
 9. Northern Appalachian and Atlantic Maritime Highlands <br>  
 10. Interior Highlands and Klondike Plateau <br>  
 11. Alaska Range <br> 
