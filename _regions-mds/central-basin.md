@@ -8,8 +8,6 @@ Land Use: Ranching, mining, wildlife habitat reserves, and recreation are common
 
 <img src="../fig/region_of_interest_plotCentral-Basin-and-Range.png " width = "100%" align="middle"/>
 
-<img src="../fig/neon_site_on_region_Central Basin and Range.png " width = "75%" align="middle"/>
-<img src="../fig/i_plot_Central Basin and Range.png" width = "75%" align="middle"/>
 <img src="../fig/r_plot_Central-Basin-and-Range.png" width = "75%" align="middle"/>
 <img src="../fig/institution_sampling_Central-Basin-and-Range.png" width = "75%" align="middle"/>
 <img src="../fig/timeseries_density_Central-Basin-and-Range.png" width = "75%" align="middle"/>
