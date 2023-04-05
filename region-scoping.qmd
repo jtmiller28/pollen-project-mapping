@@ -10,6 +10,7 @@ editor: visual
 An overview of ecoregions & Neon sites of interest concerning the Pollen Database project
 
 Libraries
+
 ```{r}
 library(sf)
 library(data.table)
@@ -17,18 +18,16 @@ library(tidyverse)
 ```
 
 Bring in the Ecoregions & Neon Sites (Sites are depicted as centroids)
+
 ```{r}
-us_ecoregions_3 <- sf::read_sf("/home/jt-miller/Pollen-Project/Pollen-DB/raw-data/Ecoregions/us-level3-ecoregions/us_eco_l3.shp") %>% 
-                      sf::st_transform(crs = 4326) # Transform into WGS84 from native projection (Albers equal Area)
-us_ecoregions_4 <- sf::read_sf("/home/jt-miller/Pollen-Project/Pollen-DB/raw-data/Ecoregions/us-level4-ecoregions/us_eco_l4_no_st.shp") %>% 
-                      sf::st_transform(crs = 4326) # Transform into WGS84 from native projection (Albers equal Area)
-na_ecoregions_3 <- sf::read_sf("/home/jt-miller/Pollen-Project/Pollen-DB/raw-data/Ecoregions/na-level3-ecoregions/NA_CEC_Eco_Level3.shp") %>% 
+
+na_ecoregions_3 <- sf::read_sf("/home/jt-miller/Pollen-Project/pollen-project-mapping/raw-data/Ecoregions/na-level3-ecoregions/NA_CEC_Eco_Level3.shp") %>% 
                       sf::st_transform(crs = 4326) # Transform into WGS84 from native projection (Lambert Azimuthal Equal Area)
-neon_sites <- read.csv("/home/jt-miller/Pollen-Project/Pollen-DB/raw-data/NEON-sites/NEON_Field_Site_Metadata_20230309.csv")
+neon_sites <- read.csv("/home/jt-miller/Pollen-Project/pollen-project-mapping/raw-data/NEON-sites/NEON_Field_Site_Metadata_20230309.csv")
 ```
 
-
 Only Retain NEON sites of interest
+
 ```{r}
 # We're focusing plants & insects, so we want sites that collect terrestrial data
 unique(neon_sites$field_site_type)
@@ -37,14 +36,16 @@ neon_sites_t <- neon_sites %>%
   filter(field_site_type %in% terr_site_types)
 ```
 
-
 Read in as Spatial Data
+
 ```{r}
 neon_sites_sp <- st_as_sf(neon_sites_t, coords = c("field_longitude", "field_latitude"), crs = 4326)
 
 
 ```
-### Locate regions of interest 
+
+### Locate regions of interest
+
 ```{r}
 # Validate (due to native crs issues), subset neon sites outside of regions. 
 na_ecoregions_3_validated <- st_make_valid(na_ecoregions_3)
@@ -56,6 +57,7 @@ neon_sites_ecoregions <- na_ecoregions_3_validated[neon_sites_sp,]
 ```
 
 #### Make some plots including the ecoregions & Neon Sites
+
 ```{r}
 ggplot() + 
   geom_sf(na_ecoregions_3_validated, mapping = aes()) +
@@ -70,30 +72,97 @@ ggplot() +
   theme_bw() + 
   ggtitle("Regions Containing NEON sites")
 
-blue_ridge <- subset(na_ecoregions_3_validated, NA_L3NAME == "Blue Ridge")
-
-blue_ridge_occur <- neon_sites_sp[blue_ridge,]
-
 ggplot() + 
-  #geom_sf(na_ecoregions_3_validated, mapping = aes()) +
-  geom_sf(blue_ridge, mapping = aes(fill = "red")) +
-  geom_sf(blue_ridge_occur, mapping = aes()) +
+  geom_sf(na_ecoregions_3_validated, mapping = aes()) +
+  geom_sf(neon_sites_ecoregions, mapping = aes(fill = "Region")) +
+  geom_sf(neon_sites_in_regions, mapping = aes()) +
   theme_bw() + 
-  ggtitle("Blue Ridge Sites")
-
+  ggtitle("Level 3 EPA North American Ecoregions Containing NEON sites") + 
+  theme(plot.title = element_text(hjust = 0.5)) +
+  guides(fill = guide_legend(title = "Regions of Interest"))
+  
+ggsave(filename = "/home/jt-miller/Pollen-Project/pollen-project-mapping/output-figures/NAecoregion-Neon-sites/ecoregion-overall-map-w-neon.png", plot = last_plot(), width = 20, height = 10, units = "cm")
 
 ```
-### Extract Regions of Interest, Create Sampling Heatmaps 
+
+### Extract Regions of Interest, Create Sampling Heatmaps
+
 ```{r}
 regions_of_interest <- neon_sites_ecoregions$NA_L3NAME
 
 region_i_df <- as.data.frame(regions_of_interest)
+
+neon_sites_of_interest <- neon_sites_in_regions$field_site_name
+neon_i_df <- as.data.frame(neon_sites_of_interest)
 ```
-
-
 
 ```{r}
-write.table(region_i_df, file = "/home/jt-miller/Pollen-Project/Pollen-DB/processed-data/shape-outputs/ecoregions/na-lvl3-ecoregions-w-neon-sites.txt", 
-           sep = "\t", row.names=FALSE, col.names=FALSE, quote=FALSE)
+#write.table(region_i_df, file = "/home/jt-miller/Pollen-Project/Pollen-DB/processed-data/shape-outputs/ecoregions/na-lvl3-ecoregions-w-neon-sites.txt", 
+          # sep = "\t", row.names=FALSE, col.names=FALSE, quote=FALSE)
+
+write.table(neon_i_df, file = "/home/jt-miller/Pollen-Project/pollen-project-mapping/processed-data/shape-outputs/neon-sites/neon_sites_in_lvl3NAregions.txt", 
+          sep = "\t", row.names=FALSE, col.names=FALSE, quote=FALSE)
 ```
+
+### Creating a ggplot with labeled ecoregions for clarity?
+```{r}
+# Create centroids: 
+x <- st_centroid(neon_sites_ecoregions)
+df <- x %>% 
+  mutate(id = row_number()) %>% 
+  mutate(long = unlist(map(x$geometry,1)),
+           lat = unlist(map(x$geometry,2)))
+
+
+separated_coord <- df %>%
+    
+ggplot() + 
+  geom_sf(na_ecoregions_3_validated, mapping = aes()) +
+  geom_sf(neon_sites_ecoregions, mapping = aes(fill = "Region")) +
+  geom_text(df, mapping = aes(x = long, y = lat, label = id), size = 4 ) +
+  theme_bw() + 
+  ggtitle("Level 3 EPA North American Ecoregions Containing NEON sites") + 
+  theme(plot.title = element_text(hjust = 0.5)) +
+  guides(fill="none")
+ggsave(filename = "/home/jt-miller/Pollen-Project/pollen-project-mapping/output-figures/NAecoregion-Neon-sites/ecoregion-overall-map-w-numbers.png", plot = last_plot(), width = 25, height = 25, units = "cm")
+```
+
+### Create Ecoregion orientation Maps 
+```{r}
+# Testing grounds 
+setwd("/home/jt-miller/Pollen-Project/pollen-project-mapping/output-figures/NAecoregion-Neon-sites/")
+for(i in 1:length(regions_of_interest)){
+  region_to_subset <- regions_of_interest[[i]]
+  subset_of_region <- subset(na_ecoregions_3_validated, na_ecoregions_3_validated$NA_L3NAME == region_to_subset)
+  neon_site_subset <- neon_sites_sp[subset_of_region,]
+  
+  ggplot() + 
+  geom_sf(na_ecoregions_3_validated, mapping = aes()) +
+  geom_sf(subset_of_region, mapping = aes(fill = "Region")) +
+  geom_sf(neon_site_subset, mapping = aes()) +
+  theme_bw() + 
+  ggtitle(paste0("Neon Sites with", "\n", regions_of_interest[[i]])) + 
+  theme(plot.title = element_text(hjust = 0.5)) +
+  guides(fill="none")
+
+  
+  ggsave(file=paste0("region_of_interest_plot", regions_of_interest[[i]],".png"), plot = last_plot(), width = 20, height = 10, units = "cm")
+  
+}
+
+
+test <- regions_of_interest[[1]]
+test2 <- subset(na_ecoregions_3_validated, na_ecoregions_3_validated$NA_L3NAME == test)
+neon_sites_test <- neon_sites_sp[test2,]
+
+ggplot() + 
+  geom_sf(na_ecoregions_3_validated, mapping = aes()) +
+  geom_sf(test2, mapping = aes(fill = "Region")) +
+  geom_sf(neon_sites_test, mapping = aes()) +
+  theme_bw() + 
+  ggtitle(paste0("Neon Sites with", "\n", regions_of_interest[[1]])) + 
+  theme(plot.title = element_text(hjust = 0.5)) +
+  guides(fill = guide_legend(title = "Regions of Interest"))
+```
+
 
