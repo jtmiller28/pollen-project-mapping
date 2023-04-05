@@ -40,3 +40,8 @@ In a bit more detail, here are the ecoregions labeled with IDs. Written below is
 27. Northern Lakes and Forests <br>
 28. Cascades <br>
   
+Ecoregion description intros were summarized from information published by the EPA that can be found [here](./raw-data/Ecoregions/metadata/NA_TerrestrialEcoregionsLevel3_Final-2june11_CEC.pdf) 
+Citation: Wiken, Ed, Francisco Jiménez Nava, and Glenn
+Griffith. 2011. North American Terrestrial Ecoregions—Level
+III. Commission for Environmental Cooperation, Montreal,
+Canada
