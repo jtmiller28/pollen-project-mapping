@@ -7,11 +7,13 @@ Here I am outlining the visualizations to illustrate potential site selection fo
 
 <img src="./fig/ecoregion-overall-map-w-neon.png" width = "100%" align="middle"/>
 
+For this first run through I focused on looking at how sampling has occurred over each of the ecoregions, what diversity of bees is present, what peaks of sampling exist through time, and what the taxonomic scope we can expect out the collections. [Here] is a seperate page describing a bit more in detail how these metrics and plots were made. 
+
 This figure represents the the level 3 North American ecoregions containing NEON sites. There are a total of [27 unique ecoregions](https://github.com/jtmiller28/pollen-project-mapping/blob/main/processed-data/shape-outputs/ecoregions/na-lvl3-ecoregions-w-neon-sites.txt) containing the [44 NEON terrestrial sites](https://github.com/jtmiller28/pollen-project-mapping/blob/main/processed-data/shape-outputs/neon-sites/neon_sites_in_lvl3NAregions.txt) that applies to the continental extent of North America.  
 
 <img src="./fig/ecoregion-overall-map-w-numbers.png" width = "100%" align="middle"/>
 In a bit more detail, here are the ecoregions labeled with IDs. Written below is the key to these ids, as well as a hyper link to each page. Note that Blue Ridge shows up twice, giving us a grand total of 28.<br>  
-1. [Central Basin and Range](./regions-mds/central-basin.md) <br>      
+1. [Central Basin and Range](./_regions-mds/central-basin.md) <br>      
 2. Colorado Plateaus <br>  
 3. Sonoran Desert <br>  
 4. Chihuahuan Desert <br>  
