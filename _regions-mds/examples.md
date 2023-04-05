@@ -8,5 +8,5 @@ To measure intensity of sampling in ecoregions as well as richness I conducted t
 - Each grid cell was measured for number of unique species occurring, creating the output for the richness maps. 
 
 Examples of intensity maps and richness maps:
-<img src="./fig/i_plot_Southern Coastal Plain.png" width = "100%" align="middle"/>
-<img src="./fig/r_plot_Southern-Coastal-Plain.png" width = "100%" align="middle"/>
+<img src="../fig/i_plot_Southern Coastal Plain.png" width = "100%" align="middle"/>
+<img src="../fig/r_plot_Southern-Coastal-Plain.png" width = "100%" align="middle"/>
