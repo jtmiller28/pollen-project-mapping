@@ -15,7 +15,7 @@ This figure represents the the level 3 North American ecoregions containing NEON
 In a bit more detail, here are the ecoregions labeled with IDs. Written below is the key to these ids, as well as a hyper link to each page. Note that Blue Ridge shows up twice, giving us a grand total of 28.<br>  
 1. [Central Basin and Range](./regions-mds/central-basin.md) <br>      
 2. [Colorado Plateaus](./regions-mds/colorado-plateaus.md) <br>  
-3. Sonoran Desert <br>  
+3. [Sonoran Desert](./regions-mds/sonoran.md) <br>  
 4. Chihuahuan Desert <br>  
 5. California Coastal Sage, Chaparral, and Oak Woodlands <br>  
 6. Arctic Coastal Plain <br>  
