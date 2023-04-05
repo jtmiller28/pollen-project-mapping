@@ -25,7 +25,7 @@ In a bit more detail, here are the ecoregions labeled with IDs. Written below is
 10. [Interior Highlands and Klondike Plateau](./regions-mds/interior-highlands-and-klondike-plateau.md) <br>  
 11. [Alaska Range](./regions-mds/alaska-range.md) <br> 
 12. [Middle Rockies](./regions-mds/middle-rockies.md) <br> 
-13. Sierra Nevada <br>  
+13. [Sierra Nevada](./regions-mds/sierra-nevadas.md) <br>  
 14. Southern Rockies <br>
 15. Southeastern Plains <br>
 16. Ridge and Valley <br>
