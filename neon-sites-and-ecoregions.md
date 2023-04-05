@@ -16,7 +16,7 @@ In a bit more detail, here are the ecoregions labeled with IDs. Written below is
 1. [Central Basin and Range](./regions-mds/central-basin.md) <br>      
 2. [Colorado Plateaus](./regions-mds/colorado-plateaus.md) <br>  
 3. [Sonoran Desert](./regions-mds/sonoran.md) <br>  
-4. Chihuahuan Desert <br>  
+4. [Chihuahuan Desert](./regions-mds/chihuahuan-desert.md) <br>  
 5. California Coastal Sage, Chaparral, and Oak Woodlands <br>  
 6. Arctic Coastal Plain <br>  
 7. Brooks Range/Richardson Mountains <br>  
