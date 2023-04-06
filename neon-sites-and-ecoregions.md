@@ -37,7 +37,7 @@ In a bit more detail, here are the ecoregions labeled with IDs. Written below is
 22. [Northwestern Great Plains](./regions-mds/northwestern-great-plains.md) <br>
 23. [High Plains](./regions-mds/high-plains.md) <br>
 24. [Central Great Plains](./regions-mds/central-great-plains.md) <br>
-25. Flint Hills <br>
+25. [Flint Hills](./regions-mds/flint-hills.md) <br>
 26. Cross Timbers <br>
 27. Northern Lakes and Forests <br>
 28. Cascades <br>
