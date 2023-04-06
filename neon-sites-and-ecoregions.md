@@ -29,8 +29,8 @@ In a bit more detail, here are the ecoregions labeled with IDs. Written below is
 14. [Southern Rockies](./regions-mds/southern-rockies.md) <br>
 15. [Southeastern Plains](./regions-mds/southeastern-plains.md) <br>
 16. [Ridge and Valley](./regions-mds/ridge-and-valley.md) <br>
-17. Blue Ridge <br>
-18. Blue Ridge <br>
+17. [Blue Ridge](./regions-mds/blue-ridge.md) <br>
+18. [Blue Ridge](./regions-mds/blue-ridge.md) <br>
 19. Southern Coastal Plain <br>
 20. Central Irregular Plains <br>
 21. Northwestern Glaciated Plains <br>
