@@ -9,7 +9,7 @@ Note that the above fields were quoted directly from: Wiken et al. 2011 (see fro
 
 <img src="../fig/region_of_interest_plotNorthwestern Great Plains.png" width = "100%" align="middle"/>
 
-<img src="../fig/neon_site_on_region_Central Great Plains.png" width = "75%" align="middle"/>
+<img src="../fig/neon_site_on_region_Northwestern Great Plains.png" width = "75%" align="middle"/>
 <img src="../fig/i_plot_Northwestern Great Plains.png" width = "75%" align="middle"/>
 <img src="../fig/r_plot_Northwestern-Great-Plains.png" width = "75%" align="middle"/>
 <img src="../fig/institution_sampling_Northwestern-Great-Plains.png" width = "75%" align="middle"/>
