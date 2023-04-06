@@ -26,7 +26,7 @@ In a bit more detail, here are the ecoregions labeled with IDs. Written below is
 11. [Alaska Range](./regions-mds/alaska-range.md) <br> 
 12. [Middle Rockies](./regions-mds/middle-rockies.md) <br> 
 13. [Sierra Nevada](./regions-mds/sierra-nevadas.md) <br>  
-14. Southern Rockies <br>
+14. [Southern Rockies](./regions-mds/southern-rockies.md) <br>
 15. Southeastern Plains <br>
 16. Ridge and Valley <br>
 17. Blue Ridge <br>
