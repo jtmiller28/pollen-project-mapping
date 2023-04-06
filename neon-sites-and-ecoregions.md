@@ -32,7 +32,7 @@ In a bit more detail, here are the ecoregions labeled with IDs. Written below is
 17. [Blue Ridge](./regions-mds/blue-ridge.md) <br>
 18. [Blue Ridge](./regions-mds/blue-ridge.md) <br>
 19. [Southern Coastal Plain](./regions-mds/southern-coastal-plain.md) <br>
-20. Central Irregular Plains <br>
+20. [Central Irregular Plains](./regions-mds/central-irregular-plains.md) <br>
 21. Northwestern Glaciated Plains <br>
 22. Northwestern Great Plains <br>
 23. High Plains <br>
