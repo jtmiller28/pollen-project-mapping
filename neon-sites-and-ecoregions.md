@@ -28,7 +28,7 @@ In a bit more detail, here are the ecoregions labeled with IDs. Written below is
 13. [Sierra Nevada](./regions-mds/sierra-nevadas.md) <br>  
 14. [Southern Rockies](./regions-mds/southern-rockies.md) <br>
 15. [Southeastern Plains](./regions-mds/southeastern-plains.md) <br>
-16. Ridge and Valley <br>
+16. [Ridge and Valley](./regions-mds/ridge-and-valley.md) <br>
 17. Blue Ridge <br>
 18. Blue Ridge <br>
 19. Southern Coastal Plain <br>
