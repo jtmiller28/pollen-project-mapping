@@ -23,7 +23,7 @@ In a bit more detail, here are the ecoregions labeled with IDs. Written below is
 8. [Interior Forested Lowlands and Uplands](./regions-mds/interior-forested-lowlands-and-uplands.md) <br>
 9. [Northern Appalachian and Atlantic Maritime Highlands](./regions-mds/northern-appalachian-and-atlantic-maritime-highlands.md)<br>  
 10. [Interior Highlands and Klondike Plateau](./regions-mds/interior-highlands-and-klondike-plateau.md) <br>  
-11. [Alaska Range]*(./regions-mds/alaska-range.md) <br> 
+11. [Alaska Range](./regions-mds/alaska-range.md)* <br> 
 12. [Middle Rockies](./regions-mds/middle-rockies.md) <br> 
 13. [Sierra Nevada](./regions-mds/sierra-nevadas.md) <br>  
 14. [Southern Rockies](./regions-mds/southern-rockies.md) <br>
