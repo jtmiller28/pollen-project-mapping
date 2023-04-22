@@ -13,7 +13,7 @@ This figure represents the the level 3 North American ecoregions containing NEON
 
 <img src="./fig/ecoregion-overall-map-w-numbers.png" width = "100%" align="middle"/>
 In a bit more detail, here are the ecoregions labeled with IDs. Written below is the key to these ids, as well as a hyper link to each page. Note that Blue Ridge shows up twice, giving us a grand total of 28. * denotes plant metrics are included in this ecoregion page. <br>  
-1. [Central Basin and Range](./regions-mds/central-basin.md) <br>      
+1. [Central Basin and Range](./regions-mds/central-basin.md)* <br>      
 2. [Colorado Plateaus](./regions-mds/colorado-plateaus.md) <br>  
 3. [Sonoran Desert](./regions-mds/sonoran.md) <br>  
 4. [Chihuahuan Desert](./regions-mds/chihuahuan-desert.md) <br>  
