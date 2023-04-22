@@ -15,7 +15,7 @@ This figure represents the the level 3 North American ecoregions containing NEON
 In a bit more detail, here are the ecoregions labeled with IDs. Written below is the key to these ids, as well as a hyper link to each page. Note that Blue Ridge shows up twice, giving us a grand total of 28. * denotes plant metrics are included in this ecoregion page. <br>  
 1. [Central Basin and Range](./regions-mds/central-basin.md)* <br>      
 2. [Colorado Plateaus](./regions-mds/colorado-plateaus.md) <br>  
-3. [Sonoran Desert](./regions-mds/sonoran.md) <br>  
+3. [Sonoran Desert](./regions-mds/sonoran.md)* <br>  
 4. [Chihuahuan Desert](./regions-mds/chihuahuan-desert.md) <br>  
 5. [California Coastal Sage, Chaparral, and Oak Woodlands](./regions-mds/california-coastal-sage-chaparral-and-oak-woodlands.md)* <br>  
 6. [Arctic Coastal Plain](./regions-mds/arctic-coastal-plain.md)* <br>  
@@ -25,7 +25,7 @@ In a bit more detail, here are the ecoregions labeled with IDs. Written below is
 10. [Interior Highlands and Klondike Plateau](./regions-mds/interior-highlands-and-klondike-plateau.md)* <br>  
 11. [Alaska Range](./regions-mds/alaska-range.md)* <br> 
 12. [Middle Rockies](./regions-mds/middle-rockies.md) <br> 
-13. [Sierra Nevada](./regions-mds/sierra-nevadas.md) <br>  
+13. [Sierra Nevada](./regions-mds/sierra-nevadas.md)* <br>  
 14. [Southern Rockies](./regions-mds/southern-rockies.md) <br>
 15. [Southeastern Plains](./regions-mds/southeastern-plains.md) <br>
 16. [Ridge and Valley](./regions-mds/ridge-and-valley.md) <br>
