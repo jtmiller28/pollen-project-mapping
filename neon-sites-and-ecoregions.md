@@ -26,21 +26,21 @@ In a bit more detail, here are the ecoregions labeled with IDs. Written below is
 11. [Alaska Range](./regions-mds/alaska-range.md) <br> 
 12. [Middle Rockies](./regions-mds/middle-rockies.md) <br> 
 13. [Sierra Nevada](./regions-mds/sierra-nevadas.md) <br>  
-14. Southern Rockies <br>
-15. Southeastern Plains <br>
-16. Ridge and Valley <br>
-17. Blue Ridge <br>
-18. Blue Ridge <br>
-19. Southern Coastal Plain <br>
-20. Central Irregular Plains <br>
-21. Northwestern Glaciated Plains <br>
-22. Northwestern Great Plains <br>
-23. High Plains <br>
-24. Central Great Plains <br>
-25. Flint Hills <br>
-26. Cross Timbers <br>
-27. Northern Lakes and Forests <br>
-28. Cascades <br>
+14. [Southern Rockies](./regions-mds/southern-rockies.md) <br>
+15. [Southeastern Plains](./regions-mds/southeastern-plains.md) <br>
+16. [Ridge and Valley](./regions-mds/ridge-and-valley.md) <br>
+17. [Blue Ridge](./regions-mds/blue-ridge.md) <br>
+18. [Blue Ridge](./regions-mds/blue-ridge.md) <br>
+19. [Southern Coastal Plain](./regions-mds/southern-coastal-plain.md) <br>
+20. [Central Irregular Plains](./regions-mds/central-irregular-plains.md) <br>
+21. [Northwestern Glaciated Plains](./regions-mds/northwestern-glaciated-plains.md) <br>
+22. [Northwestern Great Plains](./regions-mds/northwestern-great-plains.md) <br>
+23. [High Plains](./regions-mds/high-plains.md) <br>
+24. [Central Great Plains](./regions-mds/central-great-plains.md) <br>
+25. [Flint Hills](./regions-mds/flint-hills.md) <br>
+26. [Cross Timbers](./regions-mds/cross-timbers.md) <br>
+27. [Northern Lakes and Forests](./regions-mds/northern-lakes-and-forests.md) <br>
+28. [Cascades](./regions-mds/cascades.md) <br>
   
 Ecoregion description intros were summarized from information published by the EPA that can be found [here](./raw-data/Ecoregions/metadata/NA_TerrestrialEcoregionsLevel3_Final-2june11_CEC.pdf) 
 Citation: Wiken, Ed, Francisco Jiménez Nava, and Glenn
