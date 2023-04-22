@@ -10,8 +10,18 @@
 
 
 <img src="../fig/neon_site_on_region_Sonoran Desert.png" width = "75%" align="middle"/>
+
 <img src="../fig/i_plot_Sonoran Desert.png" width = "75%" align="middle"/>
+<img src="../fig/i_plot_plants_Sonoran-Desert.png" width = "75%" align="middle"/>
+
 <img src="../fig/r_plot_Sonoran-Desert.png" width = "75%" align="middle"/>
+<img src="../fig/r_plot_plants_Sonoran-Desert.png" width = "75%" align="middle"/>
+
 <img src="../fig/institution_sampling_Sonoran-Desert.png" width = "75%" align="middle"/>
+<img src="../fig/plants_institution_sampling_Sonoran-Desert.png" width = "75%" align="middle"/>
+
 <img src="../fig/timeseries_density_Sonoran-Desert.png" width = "75%" align="middle"/>
+<img src="../fig/plants_timeseries_density_Sonoran-Desert.png" width = "75%" align="middle"/>
+
 <img src="../fig/taxonomic_treeMap_Sonoran-Desert.png" width = "75%" align="middle"/>
+<img src="../fig/plants_taxonomic_treeMap_Sonoran-Desert.png" width = "75%" align="middle"/>
