@@ -17,7 +17,7 @@ In a bit more detail, here are the ecoregions labeled with IDs. Written below is
 2. [Colorado Plateaus](./regions-mds/colorado-plateaus.md) <br>  
 3. [Sonoran Desert](./regions-mds/sonoran.md) <br>  
 4. [Chihuahuan Desert](./regions-mds/chihuahuan-desert.md) <br>  
-5. [California Coastal Sage, Chaparral, and Oak Woodlands](./regions-mds/california-coastal-sage-chaparral-and-oak-woodlands.md) <br>  
+5. [California Coastal Sage, Chaparral, and Oak Woodlands](./regions-mds/california-coastal-sage-chaparral-and-oak-woodlands.md)* <br>  
 6. [Arctic Coastal Plain](./regions-mds/arctic-coastal-plain.md)* <br>  
 7. [Brooks Range/Richardson Mountains](./regions-mds/brooks-range-richardsons-mountains.md)* <br>  
 8. [Interior Forested Lowlands and Uplands](./regions-mds/interior-forested-lowlands-and-uplands.md) <br>
