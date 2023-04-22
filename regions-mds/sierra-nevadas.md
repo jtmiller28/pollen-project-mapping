@@ -1,4 +1,4 @@
-### Sierra Nevada (The Subjectively the Best Ecoregion) 
+### Sierra Nevada (Subjectively the Best Ecoregion) 
 **Location:** A high north-south mountain range of eastern California with a small extension into far western Nevada near Lake Tahoe.  <br>
 **Climate:** The ecoregion has a severe to mild mid-latitude climate with Mediterranean characteristics. It has mild to hot dry summers and cool to cold wet winters. The mean annual temperature ranges from  approximately -3C at high elevations to 17C at low elevations on the southwest. The frost-free period ranges from 30 to 320 days. The mean annual precipitation is 1070 mm, ranging from 150 mm in the eastern lowlands to over 2500 mm on high elevation peaks.  <br>
 **Vegetation:** Very diverse temperate coniferous forests. The vegetation grades from chaparral and oak woodland to mostly ponderosa pine at the lower elevations on the west side, and lodgepole pine on the east side, to mixed conifer forests of ponderosa pine, sugar pine, Douglas-fir, and white fir. Giant sequoias occur in some areas, the most massive trees on Earth. At higher elevations, white fir and red fir forests, and in the subalpine zone, lodgepole pine, Jeffrey pine, western white pine, limber pine, and aspen. Alpine conditions exist at the highest elevations. <br>
@@ -11,8 +11,18 @@ Note that the above fields were quoted directly from: Wiken et al. 2011 (see fro
 <img src="../fig/region_of_interest_plotSierra Nevada.png" width = "100%" align="middle"/>
 
 <img src="../fig/neon_site_on_region_Sierra Nevada.png" width = "75%" align="middle"/>
+
 <img src="../fig/i_plot_Sierra Nevada.png" width = "75%" align="middle"/>
+<img src="../fig/i_plot_plants_Sierra-Nevada.png" width = "75%" align="middle"/>
+
 <img src="../fig/r_plot_Sierra-Nevada.png" width = "75%" align="middle"/>
+<img src="../fig/r_plot_plants_Sierra-Nevada.png" width = "75%" align="middle"/>
+
 <img src="../fig/institution_sampling_Sierra-Nevada.png" width = "75%" align="middle"/>
+<img src="../fig/plants_institution_sampling_Sierra-Nevada.png" width = "75%" align="middle"/>
+
 <img src="../fig/timeseries_density_Sierra-Nevada.png" width = "75%" align="middle"/>
+<img src="../fig/plants_timeseries_density_Sierra-Nevada.png" width = "75%" align="middle"/>
+
 <img src="../fig/taxonomic_treeMap_Sierra-Nevada.png" width = "75%" align="middle"/>
+<img src="../fig/plants_taxonomic_treeMap_Sierra-Nevada.png" width = "75%" align="middle"/>
