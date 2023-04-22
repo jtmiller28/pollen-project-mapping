@@ -11,8 +11,18 @@ Note that the above fields were quoted directly from: Wiken et al. 2011 (see fro
 <img src="../fig/region_of_interest_plotInterior Highlands and Klondike Plateau.png" width = "100%" align="middle"/>
 
 <img src="../fig/neon_site_on_region_Interior Highlands and Klondike Plateau.png" width = "75%" align="middle"/>
+
 <img src="../fig/i_plot_Interior Highlands and Klondike Plateau.png" width = "75%" align="middle"/>
+<img src="../fig/i_plot_plants_Interior-Highlands-and-Klondike-Plateau.png" width = "75%" align="middle"/>
+
 <img src="../fig/r_plot_Interior-Highlands-and-Klondike-Plateau.png" width = "75%" align="middle"/>
+<img src="../fig/r_plot_plants_Interior-Highlands-and-Klondike-Plateau.png" width = "75%" align="middle"/>
+
 <img src="../fig/institution_sampling_Interior-Highlands-and-Klondike-Plateau.png" width = "75%" align="middle"/>
+<img src="../fig/plants_institution_sampling_Interior-Highlands-and-Klondike-Plateau.png" width = "75%" align="middle"/>
+
 <img src="../fig/timeseries_density_Interior-Highlands-and-Klondike-Plateau.png" width = "75%" align="middle"/>
+<img src="../fig/plants_timeseries_density_Interior-Highlands-and-Klondike-Plateau.png" width = "75%" align="middle"/>
+
 <img src="../fig/taxonomic_treeMap_Interior-Highlands-and-Klondike-Plateau.png" width = "75%" align="middle"/>
+<img src="../fig/plants_taxonomic_treeMap_Interior-Highlands-and-Klondike-Plateau.png" width = "75%" align="middle"/>
