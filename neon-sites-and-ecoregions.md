@@ -12,7 +12,7 @@ For this first run through I focused on looking at how sampling has occurred ove
 This figure represents the the level 3 North American ecoregions containing NEON sites. There are a total of [27 unique ecoregions](https://github.com/jtmiller28/pollen-project-mapping/blob/main/processed-data/shape-outputs/ecoregions/na-lvl3-ecoregions-w-neon-sites.txt) containing the [44 NEON terrestrial sites](https://github.com/jtmiller28/pollen-project-mapping/blob/main/processed-data/shape-outputs/neon-sites/neon_sites_in_lvl3NAregions.txt) that applies to the continental extent of North America.  
 
 <img src="./fig/ecoregion-overall-map-w-numbers.png" width = "100%" align="middle"/>
-In a bit more detail, here are the ecoregions labeled with IDs. Written below is the key to these ids, as well as a hyper link to each page. Note that Blue Ridge shows up twice, giving us a grand total of 28.<br>  
+In a bit more detail, here are the ecoregions labeled with IDs. Written below is the key to these ids, as well as a hyper link to each page. Note that Blue Ridge shows up twice, giving us a grand total of 28. * denotes plant metrics are included in this ecoregion page. <br>  
 1. [Central Basin and Range](./regions-mds/central-basin.md) <br>      
 2. [Colorado Plateaus](./regions-mds/colorado-plateaus.md) <br>  
 3. [Sonoran Desert](./regions-mds/sonoran.md) <br>  
@@ -23,7 +23,7 @@ In a bit more detail, here are the ecoregions labeled with IDs. Written below is
 8. [Interior Forested Lowlands and Uplands](./regions-mds/interior-forested-lowlands-and-uplands.md) <br>
 9. [Northern Appalachian and Atlantic Maritime Highlands](./regions-mds/northern-appalachian-and-atlantic-maritime-highlands.md)<br>  
 10. [Interior Highlands and Klondike Plateau](./regions-mds/interior-highlands-and-klondike-plateau.md) <br>  
-11. [Alaska Range](./regions-mds/alaska-range.md) <br> 
+11. [Alaska Range]*(./regions-mds/alaska-range.md) <br> 
 12. [Middle Rockies](./regions-mds/middle-rockies.md) <br> 
 13. [Sierra Nevada](./regions-mds/sierra-nevadas.md) <br>  
 14. [Southern Rockies](./regions-mds/southern-rockies.md) <br>
