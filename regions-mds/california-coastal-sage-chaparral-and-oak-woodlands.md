@@ -11,8 +11,18 @@ Note that the above fields were quoted directly from: Wiken et al. 2011 (see fro
 <img src="../fig/region_of_interest_plotCalifornia Coastal Sage, Chaparral, and Oak Woodlands.png" width = "100%" align="middle"/>
 
 <img src="../fig/neon_site_on_region_California Coastal Sage, Chaparral, and Oak Woodlands.png" width = "75%" align="middle"/>
+
 <img src="../fig/i_plot_California Coastal Sage, Chaparral, and Oak Woodlands.png" width = "75%" align="middle"/>
+<img src="../fig/i_plot_plants_California-Coastal-Sage,-Chaparral,-and-Oak-Woodlands.png" width = "75%" align="middle"/>
+
 <img src="../fig/r_plot_California-Coastal-Sage,-Chaparral,-and-Oak-Woodlands.png" width = "75%" align="middle"/>
+<img src="../fig/r_plot_plants_California-Coastal-Sage,-Chaparral,-and-Oak-Woodlands.png" width = "75%" align="middle"/>
+
 <img src="../fig/institution_sampling_California-Coastal-Sage,-Chaparral,-and-Oak-Woodlands.png" width = "75%" align="middle"/>
+<img src="../fig/plants_institution_sampling_California-Coastal-Sage,-Chaparral,-and-Oak-Woodlands.png" width = "75%" align="middle"/>
+
 <img src="../fig/timeseries_density_California-Coastal-Sage,-Chaparral,-and-Oak-Woodlands.png" width = "75%" align="middle"/>
+<img src="../fig/plants_timeseries_density_California-Coastal-Sage,-Chaparral,-and-Oak-Woodlands.png" width = "75%" align="middle"/>
+
 <img src="../fig/taxonomic_treeMap_California-Coastal-Sage,-Chaparral,-and-Oak-Woodlands.png" width = "75%" align="middle"/>
+<img src="../fig/plants_taxonomic_treeMap_California-Coastal-Sage,-Chaparral,-and-Oak-Woodlands.png" width = "75%" align="middle"/>
