@@ -94,32 +94,57 @@ accepted_name_v <- sapply(NorthAmerican_name_list, function(vec) vec[1]) # Creat
 accepted_name_v <- sapply(NorthAmerican_name_list, function(vec) vec[1]) # Create a vector of the acceptedNames
 accepted_name_v_filestyle <- gsub(" ", "-", accepted_name_v) # filestyle of that name vector so we dont have spaces in the filenames
 
+test_list <- name_list[sapply(name_list, function(x) any(grepl("Camptopoeum nigrotus", x)))]
+
+accepted_name_v <- accepted_name_v[str_detect(accepted_name_v, "Camptopoeum nigrotus")] # For now check with a known output species 
+accepted_name_v_filestyle <- gsub(" ", "-", accepted_name_v) # filestyle of that name vector so we dont have spaces in the filenames
+
 
 failed_names_holder <- list()
 gators_cleaning <- data.frame() # Create a storage for looking at how much data is removed per cleaning step
 
+# Due to API shennanigans, build a customized function to retry (with incrementing time cooling periods) in case of errors and store errors in our error handler (with recorded time). Note that the "No records found." is exempt from this since it indicates that there are no records in the database matching these names.
 
-
-for (i in 1:length(accepted_name_v)) {
+retry_download <- function(i, retry_count) { # Build a retry_downloader fxn that proceeds to try if an API error occurs
+  if (retry_count >= 11) { # Allow up to 11 attempts
+    failed_names_holder[[i]] <<- c(accepted_name_v[[i]], "Maximum retries exceeded", format(Sys.time(), "%a %b %d %X %Y")) # Customize the error handler 
+    return(NULL) # Null otherwise 
+  }
   
-  gators.download <- NULL  # Initialize gators.download
-  
-  tryCatch({
-    gators.download <- gatoRs::gators_download(
-      synonyms.list = NorthAmerican_name_list[[i]],
+  tryCatch({ # Try and Catch errors
+    gators.download <- gatoRs::gators_download( # Gators download 
+      synonyms.list = test_list[[i]], # Pull from nested list of organized names
       write.file = FALSE,
       gbif.match = "fuzzy",
       idigbio.filter = TRUE,
       limit = 1e+05
     )
+    
+    return(gators.download) # Return the gators.download
+    
+  }, error = function(e) { # create error report
+    if (e$message != "No records found.") { # If errors besides the following occurs, retry
+      Sys.sleep(retry_count*30)  # Apply time-cooling period: half a minute between API tries...
+      print(paste("Download attempt", retry_count + 1, "for", accepted_name_v[[i]], "failed. Retrying with delay", print(retry_count*30), "second delay"))
+      return(retry_download(i, retry_count + 1))  # Retry the download
+    } else {
+      failed_names_holder[[i]] <<- c(accepted_name_v[[i]], e, format(Sys.time(), "%a %b %d %X %Y")) # Store other errors in our error handler as well. 
+      return(NULL)
+    }
+  })
+}
+
+
+for (i in 1:length(accepted_name_v)) {
+  
+  gators.download <- retry_download(i, 0) # See above fxn, retries in cases where fails occur. 
+  
+  if (!is.null(gators.download)) {
+    gators.download <- gators.download 
     gators_cleaning[i, 1] <- accepted_name_v[[i]] # Store the AcceptedName as the one we identify the species by
     gators_cleaning[i, 2] <- nrow(subset(gators.download, aggregator == "iDigBio")) # How many records for aggregator iDigBio
     gators_cleaning[i, 3] <- nrow(subset(gators.download, aggregator == "GBIF")) # How many records for aggregator GBIF
-    
-  }, error = function(e) {
-    # Handle the download failure
-    failed_names_holder[[i]] <<- c(accepted_name_v[[i]], e)
-  })
+  }
   
   if (is.null(gators.download)) {
     # Skip to the next iteration if download failed or has insufficient data
@@ -129,7 +154,7 @@ for (i in 1:length(accepted_name_v)) {
   tryCatch({
   taxa_clean_holder <- taxa_clean(
     df = gators.download,
-    synonyms.list = NorthAmerican_name_list[[i]],
+    synonyms.list = test_list[[i]],
     taxa.filter = "fuzzy",
     accepted.name = accepted_name_v[i]
     
@@ -202,8 +227,10 @@ for (i in 1:length(accepted_name_v)) {
     
   }, error = function(e) {
     # Handle the download failure
+    if(is.null(basis_clean_holder)){ # Add additional Condition? Unsure why this is messing up...
     e$message <- "Failed BasisOfRecord Data Removal Step"
     failed_names_holder[[i]] <<- c(accepted_name_v[[i]], e)
+  }
   }) # End of Try Catch
   
   if (is.null(basis_clean_holder)) { # 
@@ -225,7 +252,8 @@ for (i in 1:length(accepted_name_v)) {
   }
   
 ### Append research related info to the occurrence data by predetermined joins ###
-  
+  specimen_analysis_dataset <- NULL  # Initialize specimen_analysis_dataset
+  tryCatch({
   specimen_analysis_dataset <- basis_clean_holder # Reassign name for clarity 
   
   # 5. Append IUCN & State Redlist status to the data
@@ -238,59 +266,82 @@ for (i in 1:length(accepted_name_v)) {
   specimen_analysis_dataset <- specimen_analysis_dataset[, host_plant := western_specialist_table[specimen_analysis_dataset, on = "accepted_name", host_plant]]
   specimen_analysis_dataset$western_specialist_status <- ifelse(specimen_analysis_dataset$host_plant != "", TRUE, FALSE)
   
+  }, error = function(e) {
+    # Handle the download failure
+    e$message <- "Failed Join Info Step"
+    failed_names_holder[[i]] <<- c(accepted_name_v[[i]], e)
+  }) # End of Try Catch
+  
+  if (is.null(specimen_analysis_dataset)) { # 
+    # Skip to the next iteration if download failed or has insufficient data
+    next
+  }
+  
   
 ## Apply Spatial Analysis in order to determine ecoregion occupancy
   # 6 & 7. Assess Endemism Status using Known North American Endemics and the spatial location of known specimens. 
   na_ecoregions_3 <- sf::read_sf("/home/jt-miller/Pollen-Project/pollen-project-mapping/raw-data/Ecoregions/na-level3-ecoregions/NA_CEC_Eco_Level3.shp") # Read in the ecoregion shapefiles for NA 
   
-  sf_bee <- st_as_sf(as.data.frame(specimen_analysis_dataset), coords = c('longitude', 'latitude'), crs = 4326, remove = FALSE) # Make our bee data spatial
-  
-  sf_bee <- st_transform(sf_bee, st_crs(na_ecoregions_3)) # Transform the projection of the specimen data to that of the ecoregions. 
-  
-  region_name_v <- unique(na_ecoregions_3$NA_L3NAME) # Take the unique names of the ecoregions 
-  # Create a list to store our dataframes in for each region, use a for-loop to iterate subsetting
-  region_df_list <- list() # Create a holding list for the ecoregions 
-  
-  for(j in 1:length(region_name_v)){ 
-    region_df_list[[j]] <- subset(na_ecoregions_3, NA_L3NAME == region_name_v[j]) # Construct a for-loop that subsets the shapefiles to those names 
-  }
-  
-  # Partition the records out by ecoregion assigning a ecoregion field. , Also Calculate whether the bee is endemic to a particular region with a 90% threshold
-  bees_regioned <- list() # Construct a holding list
-  
-  for(k in 1:length(region_df_list)){ # for the ecoregion list
-    if(nrow(sf_bee[region_df_list[[k]],]) > 0){ # IF there is more than 0 observations in the ecoregion
-      bees_regioned_holder <- sf_bee[region_df_list[[k]],] # Subset the occurrences by the polygon boundaries of the ecoregion
-      region_name <- unique(region_df_list[[k]]$NA_L3NAME) # Grab the name of the lvl 3 ecoregion 
-      
-      bees_regioned_holder$ecoregion <- paste0(region_name) # Paste the name of the level 3 ecoregion in a new field called ecoregion
-      
-      bees_regioned[[k]] <- bees_regioned_holder # Store this subsetted occurrences by region in the holding list 
+  bees_regioned_df <- NULL  # Initialize bees_regioned_df
+  tryCatch({
+    sf_bee <- st_as_sf(as.data.frame(specimen_analysis_dataset), coords = c('longitude', 'latitude'), crs = 4326, remove = FALSE) # Make our bee data spatial
+    
+    sf_bee <- st_transform(sf_bee, st_crs(na_ecoregions_3)) # Transform the projection of the specimen data to that of the ecoregions. 
+    
+    region_name_v <- unique(na_ecoregions_3$NA_L3NAME) # Take the unique names of the ecoregions 
+    # Create a list to store our dataframes in for each region, use a for-loop to iterate subsetting
+    region_df_list <- list() # Create a holding list for the ecoregions 
+    
+    for(j in 1:length(region_name_v)){ 
+      region_df_list[[j]] <- subset(na_ecoregions_3, NA_L3NAME == region_name_v[j]) # Construct a for-loop that subsets the shapefiles to those names 
     }
-    else{ # Else do nothing...
+    
+    # Partition the records out by ecoregion assigning a ecoregion field. , Also Calculate whether the bee is endemic to a particular region with a 90% threshold
+    bees_regioned <- list() # Construct a holding list
+    
+    for(k in 1:length(region_df_list)){ # for the ecoregion list
+      if(nrow(sf_bee[region_df_list[[k]],]) > 0){ # IF there is more than 0 observations in the ecoregion
+        bees_regioned_holder <- sf_bee[region_df_list[[k]],] # Subset the occurrences by the polygon boundaries of the ecoregion
+        region_name <- unique(region_df_list[[k]]$NA_L3NAME) # Grab the name of the lvl 3 ecoregion 
+        
+        bees_regioned_holder$ecoregion <- paste0(region_name) # Paste the name of the level 3 ecoregion in a new field called ecoregion
+        
+        bees_regioned[[k]] <- bees_regioned_holder # Store this subsetted occurrences by region in the holding list 
+      }
+      else{ # Else do nothing...
+      }
     }
-  }
+    
+    if(length(bees_regioned) > 0){
+      bees_regioned_df <- do.call(rbind, bees_regioned) # Bind these regioned bees together
+      
+      
+      bees_regioned_df$isNAEndemic <- bees_regioned_df$accepted_name %in% discoverLife_NA_bee_names_v # Check whether the bee is a NA endemic 
+      
+      
+      bees_regioned_df <- bees_regioned_df %>% 
+        mutate(regional_weighting = 1) %>% # Add some weighting, assuming that each occurrence is a single observation
+        group_by(ecoregion) %>% # GROUP BY ecoregion 
+        mutate(regional_props = sum(regional_weighting)/nrow(bees_regioned_df) ) %>%  # Calculate the proportion of bees in the region as compared to all regions
+        mutate(isEcoregionEndemic = ifelse(isNAEndemic == FALSE, FALSE, # Create a new field, first: If not an NA endemic, then FALSE no matter what...
+                                           case_when( # Apply conditions for what is an ecoregion ENDEMIC 
+                                             regional_props >= 0.90 ~ TRUE, # If 90% or more of the occurrences are within a particular ecoregion, classify as endemic 
+                                             regional_props < 0.90 ~ FALSE # If anything less than 90%, NOT an endemic 
+                                           ))) %>% 
+        mutate(occur_perc_in_ecoregion = round(regional_props * 100,2)) %>%  # Add percentage of occupancy based upon known specimen occurrences for interests sake 
+        st_drop_geometry() 
+    } else{
+      bees_regioned_df <- data.frame(accepted_name = accepted_name_v[[i]], ecoregion = "No Occurrence Data In North America")
+    }
+    
+  }, error = function(e) {
+    # Handle the download failure
+    e$message <- "Failed Spatial Partitioning"
+    failed_names_holder[[i]] <<- c(accepted_name_v[[i]], e)
+  }) # End of Try Catch
   
-  if(length(bees_regioned) > 0){
-    bees_regioned_df <- do.call(rbind, bees_regioned) # Bind these regioned bees together
-    
-    
-    bees_regioned_df$isNAEndemic <- bees_regioned_df$accepted_name %in% discoverLife_NA_bee_names_v # Check whether the bee is a NA endemic 
-    
-    
-    bees_regioned_df <- bees_regioned_df %>% 
-      mutate(regional_weighting = 1) %>% # Add some weighting, assuming that each occurrence is a single observation
-      group_by(ecoregion) %>% # GROUP BY ecoregion 
-      mutate(regional_props = sum(regional_weighting)/nrow(bees_regioned_df) ) %>%  # Calculate the proportion of bees in the region as compared to all regions
-      mutate(isEcoregionEndemic = ifelse(isNAEndemic == FALSE, FALSE, # Create a new field, first: If not an NA endemic, then FALSE no matter what...
-                                         case_when( # Apply conditions for what is an ecoregion ENDEMIC 
-                                           regional_props >= 0.90 ~ TRUE, # If 90% or more of the occurrences are within a particular ecoregion, classify as endemic 
-                                           regional_props < 0.90 ~ FALSE # If anything less than 90%, NOT an endemic 
-                                         ))) %>% 
-      mutate(occur_perc_in_ecoregion = round(regional_props * 100,2)) %>%  # Add percentage of occupancy based upon known specimen occurrences for interests sake 
-      st_drop_geometry() 
-  } else{
-    bees_regioned_df <- data.frame(accepted_name = accepted_name_v[[i]], ecoregion = "No Occurrence Data In North America")
+  if (is.null(bees_regioned_df)){ # Skip Subsequent steps if the data cannot be cleaned
+    next
   }
 
 # Write out result
@@ -307,7 +358,9 @@ for (i in 1:length(accepted_name_v)) {
 }
 
 # Tester
-test <- fread("/home/jt-miller/Pollen-Project/pollen-project-mapping/test-data-outputs-gators/specimen_cleaned_datasets/Nomia-melanderi.txt")
+test <- fread("/home/jt-miller/Pollen-Project/pollen-project-mapping/test-data-outputs-gators/specimen_cleaned_datasets/Anthophora-hololeuca.txt")
+
+
 
 #
 colnames(gators_cleaning)[1] = "acceptedName" # Rename these cols for clarity
@@ -331,9 +384,11 @@ write.table(
 failed_names_df <- as.data.frame(do.call(rbind, failed_names_holder)) # Make into a df to document names that fail 
 colnames(failed_names_df)[1] <- "accepted_name"
 colnames(failed_names_df)[2] <- "error_message"
+colnames(failed_names_df)[4] <- "time_stamp"
 failed_names_df$accepted_name <- as.character(failed_names_df$accepted_name)
 failed_names_df$error_message <- as.character(failed_names_df$error_message)
 failed_names_df$call <- as.character(failed_names_df$call)
+failed_names_df$time_stamp <- as.character(failed_names_df$time_stamp)
 
 path <- "/home/jt-miller/Pollen-Project/pollen-project-mapping/test-data-outputs-gators/failed_names_table/"
 write.table(
